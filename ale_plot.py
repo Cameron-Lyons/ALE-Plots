@@ -3,6 +3,7 @@
 import numbers
 from itertools import chain
 from itertools import count
+from math import ceil
 import numpy as np
 from sklearn.utils import _safe_indexing
 from sklearn.utils import check_array
@@ -19,7 +20,13 @@ def plot_ale(estimator, X, features, *, feature_names=None,
                             grid_resolution=100, percentiles=(0.05, 0.95),
                             method='auto', n_jobs=None, verbose=0,
                             line_kw=None, contour_kw=None, ax=None,
-                            kind='average', subsample=1000):
+                            subsample=1000, kind="Average"):
+    """Accumulated Local Effect(ALE) plots.
+
+    The ``len(features)`` plots are arranged in a grid with ``n_cols``
+    columns.  The deciles of the feature values will be shown with tick
+    marks on the x-axes for one-way plots"""
+
     import matplotlib.pyplot as plt  # noqa
 
 
@@ -138,17 +145,17 @@ def plot_ale(estimator, X, features, *, feature_names=None,
         target_idx = target
 
     # get global min and max average predictions of ale grouped by plot type
-    alep_lim = {}
-    for alep in ale_results:
-        values = alep["values"]
-        preds = (alep.average if kind == 'average' else alep.individual)
+    ale_lim = {}
+    for ale in ale_results:
+        values = ale["values"]
+        preds = (ale.average if kind == 'average' else ale.individual)
         min_ale = preds[target_idx].min()
         max_ale = preds[target_idx].max()
         n_fx = len(values)
-        old_min_ale, old_max_ale = alep_lim.get(n_fx, (min_ale, max_ale))
+        old_min_ale, old_max_ale = ale_lim.get(n_fx, (min_ale, max_ale))
         min_ale = min(min_ale, old_min_ale)
         max_ale = max(max_ale, old_max_ale)
-        alep_lim[n_fx] = (min_ale, max_ale)
+        ale_lim[n_fx] = (min_ale, max_ale)
 
     deciles = {}
     for fx in chain.from_iterable(features):
@@ -160,7 +167,7 @@ def plot_ale(estimator, X, features, *, feature_names=None,
                                        features=features,
                                        feature_names=feature_names,
                                        target_idx=target_idx,
-                                       alep_lim=alep_lim,
+                                       ale_lim=ale_lim,
                                        deciles=deciles,
                                        kind=kind,
                                        subsample=subsample)
@@ -168,17 +175,27 @@ def plot_ale(estimator, X, features, *, feature_names=None,
                         contour_kw=contour_kw)
 
 class ALEDisplay:
+    """Accumulated Local Effects (ALE) Plot"""
 
     def __init__(self, ale_results, *, features, feature_names, target_idx,
-                 alep_lim, deciles, kind='average', subsample=1000):
+                 ale_lim, deciles, kind='average', subsample=1000):
         self.ale_results = ale_results
         self.features = features
         self.feature_names = feature_names
         self.target_idx = target_idx
-        self.alep_lim = alep_lim
+        self.ale_lim = ale_lim
         self.deciles = deciles
         self.kind = kind
         self.subsample = subsample
+
+    def _get_sample_count(self, n_samples):
+        if isinstance(self.subsample, numbers.Integral):
+            if self.subsample < n_samples:
+                return self.subsample
+            return n_samples
+        elif isinstance(self.subsample, numbers.Real):
+            return ceil(n_samples * self.subsample)
+        return n_samples
 
     def plot(self, ax=None, n_cols=3, line_kw=None, contour_kw=None):
         import matplotlib.pyplot as plt  # noqa
@@ -264,8 +281,8 @@ class ALEDisplay:
             self.contours_ = np.empty_like(ax, dtype=object)
 
         # create contour levels for two-way plots
-        if 2 in self.alep_lim:
-            Z_level = np.linspace(*self.alep_lim[2], num=8)
+        if 2 in self.ale_lim:
+            Z_level = np.linspace(*self.ale_lim[2], num=8)
 
         self.deciles_vlines_ = np.empty_like(self.axes_, dtype=object)
         self.deciles_hlines_ = np.empty_like(self.axes_, dtype=object)
@@ -344,7 +361,7 @@ class ALEDisplay:
                         axi.set_ylabel('Partial dependence')
                 else:
                     axi.set_yticklabels([])
-                axi.set_ylim(self.alep_lim[1])
+                axi.set_ylim(self.ale_lim[1])
             else:
                 # contour plot
                 trans = transforms.blended_transform_factory(axi.transAxes,
