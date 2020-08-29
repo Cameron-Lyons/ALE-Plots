@@ -1,10 +1,10 @@
-"""accumulated local effect for regression and classification models."""
+"""accumulated local effect for regression and classification models"""
 
 import numpy as np
 import pandas as pd
 
 from sklearn.base import is_regressor
-from sklearn.utils import _safe_indexing
+from sklearn.utils import _safe_indexing, _get_column_indices
 from sklearn.utils.extmath import cartesian
 from scipy.stats.mstats import mquantiles
 
@@ -49,7 +49,7 @@ def _quantiles_from_x(x, n_quantiles):
 
     return cartesian(values), values
 
-def _ale_for_numeric(est, grid, features, x, response_method):
+def _ale_for_numeric(est, grid, x, response_method='auto'):
     """computes first order accumulated local efffects for a numeric feature"""
 
     # define the prediction_method (predict, predict_proba, decision_function).
@@ -91,7 +91,7 @@ def _ale_for_numeric(est, grid, features, x, response_method):
         ale.append(value * b1[i])
     return ale
 
-def _ale_for_categorical(est, grid, features, x, response_method):
+def _ale_for_categorical(est, grid, x, response_method='auto'):
     """computes first order accumulated local efffects for a categorical feature"""
     if is_regressor(est):
         prediction_method = est.predict
@@ -114,8 +114,8 @@ def _ale_for_categorical(est, grid, features, x, response_method):
                 raise ValueError('The estimator has no predict_proba method.')
             raise ValueError('The estimator has no decision_function method.')
 
-    categories = x[features].value_counts().sort_index().values
-    n_categories = len(x[features].unique())
+    categories = x.value_counts().sort_index().values
+    n_categories = len(x.unique())
     effects = np.zeros((n_categories, n_categories))
     for i in range(n_categories):
         x_eval = x[x_min.iloc[:, 0] == categories[i]]
@@ -126,4 +126,21 @@ def _ale_for_categorical(est, grid, features, x, response_method):
         effects[i] += (prediction_method(x_plus) - prediction_method(x_min)).sum() / x_eval.shape[0]
     distance_matrix = effects.cumsum()
     ale = distance_matrix.mean()
+    return ale
+
+def accumulated_local_effects(x, n_quantiles, features, est):
+    ale = np.array(n_quantiles,)
+    features_indices = np.asarray(
+        _get_column_indices(x, features), dtype=np.int32, order='C'
+    ).ravel()
+    quantiles = _quantiles_from_x(_safe_indexing(x, features_indices, axis=1), n_quantiles)
+    ale = []
+    for feature in features_indices:
+        x_eval = _safe_indexing(x, feature, axis=1)
+        if x_eval.iloc[:, 0].dtype == "category" or x_eval.iloc[:, 0].dtype == "object":
+            feature_ale = _ale_for_categorical(est, quantiles, x_eval)
+            ale.append(feature_ale)
+        else:
+            feature_ale = _ale_for_numeric(est, quantiles, x_eval)
+            ale.append(feature_ale)
     return ale
