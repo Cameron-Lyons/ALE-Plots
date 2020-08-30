@@ -84,11 +84,11 @@ def _ale_for_numeric(est, grid, x, response_method='auto'):
     effects  = pd.DataFrame({"a1": quantiles, "delta": delta}).groupby(
         "a1"
     ).mean()
-    b1 = np.array(quantiles.value_counts(sort=False))
+    quantile_counts = np.array(quantiles.value_counts(sort=False))
     centers = (effects[:-1] + effects[1:]) / 2
     ale = []
     for i, value in enumerate(centers.to_numpy()):
-        ale.append(value * b1[i])
+        ale.append(value * quantile_counts[i])
     return ale
 
 def _ale_for_categorical(est, grid, x, response_method='auto'):
@@ -128,19 +128,16 @@ def _ale_for_categorical(est, grid, x, response_method='auto'):
     ale = distance_matrix.mean()
     return ale
 
-def accumulated_local_effects(x, n_quantiles, features, est):
+def accumulated_local_effects(est, x, feature, n_quantiles):
+    """calculates ale for a feature"""
     ale = np.array(n_quantiles,)
     features_indices = np.asarray(
-        _get_column_indices(x, features), dtype=np.int32, order='C'
+        _get_column_indices(x, feature), dtype=np.int32, order='C'
     ).ravel()
     quantiles = _quantiles_from_x(_safe_indexing(x, features_indices, axis=1), n_quantiles)
-    ale = []
-    for feature in features_indices:
-        x_eval = _safe_indexing(x, feature, axis=1)
-        if x_eval.iloc[:, 0].dtype == "category" or x_eval.iloc[:, 0].dtype == "object":
-            feature_ale = _ale_for_categorical(est, quantiles, x_eval)
-            ale.append(feature_ale)
-        else:
-            feature_ale = _ale_for_numeric(est, quantiles, x_eval)
-            ale.append(feature_ale)
+    x_eval = _safe_indexing(x, feature, axis=1)
+    if x_eval.iloc[:, 0].dtype == "category" or x_eval.iloc[:, 0].dtype == "object":
+        ale = _ale_for_categorical(est, quantiles, x_eval)
+    else:
+        ale = _ale_for_numeric(est, quantiles, x_eval)
     return ale

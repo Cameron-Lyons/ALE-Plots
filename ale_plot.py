@@ -16,9 +16,9 @@ from matplotlib import transforms
 from _ale import accumulated_local_effects
 
 def plot_ale(estimator, X, features, *, feature_names=None,
-                            target=None, response_method='auto', n_cols=3,
-                            grid_resolution=100, percentiles=(0.05, 0.95),
-                            method='auto', n_jobs=None, verbose=0,
+                            target=None, n_cols=3,
+                            n_quantiles=40,
+                            n_jobs=None, verbose=0,
                             line_kw=None, contour_kw=None, ax=None,
                             subsample=1000, kind="Average"):
     """Accumulated Local Effect(ALE) plots.
@@ -120,11 +120,7 @@ def plot_ale(estimator, X, features, *, feature_names=None,
     # compute predictions and/or averaged predictions
     ale_results = Parallel(n_jobs=n_jobs, verbose=verbose)(
         delayed(accumulated_local_effects)(estimator, X, fxs,
-                                    response_method=response_method,
-                                    method=method,
-                                    grid_resolution=grid_resolution,
-                                    percentiles=percentiles,
-                                    kind=kind)
+                                    n_quantiles=n_quantiles,)
         for fxs in features)
 
     # For multioutput regression, we can only check the validity of target
@@ -164,13 +160,13 @@ def plot_ale(estimator, X, features, *, feature_names=None,
             deciles[fx] = mquantiles(X_col, prob=np.arange(0.1, 1.0, 0.1))
 
     display = ALEDisplay(ale_results=ale_results,
-                                       features=features,
-                                       feature_names=feature_names,
-                                       target_idx=target_idx,
-                                       ale_lim=ale_lim,
-                                       deciles=deciles,
-                                       kind=kind,
-                                       subsample=subsample)
+                         features=features,
+                         feature_names=feature_names,
+                         target_idx=target_idx,
+                         ale_lim=ale_lim,
+                         deciles=deciles,
+                         kind=kind,
+                         subsample=subsample)
     return display.plot(ax=ax, n_cols=n_cols, line_kw=line_kw,
                         contour_kw=contour_kw)
 
