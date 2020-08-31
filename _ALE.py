@@ -5,7 +5,6 @@ import pandas as pd
 
 from sklearn.base import is_regressor
 from sklearn.utils import _safe_indexing, _get_column_indices
-from sklearn.utils.extmath import cartesian
 from scipy.stats.mstats import mquantiles
 
 def _quantiles_from_x(x, n_quantiles):
@@ -33,7 +32,6 @@ def _quantiles_from_x(x, n_quantiles):
     if n_quantiles <= 1:
         raise ValueError("'n_quantiles' must be strictly greater than 1.")
 
-    values = []
     for feature in range(x.shape[1]):
         uniques = np.unique(_safe_indexing(x, feature, axis=1))
     if uniques.shape[0] < n_quantiles:
@@ -45,11 +43,9 @@ def _quantiles_from_x(x, n_quantiles):
             _safe_indexing(x, feature, axis=1), prob=np.linspace(0, 1, n_quantiles)
         )
 
-    values.append(emp_percentiles)
+    return emp_percentiles
 
-    return cartesian(values), values
-
-def _ale_for_numeric(est, grid, x, response_method='auto'):
+def _ale_for_numeric(est, grid, x, feature, response_method='auto'):
     """computes first order accumulated local efffects for a numeric feature"""
 
     # define the prediction_method (predict, predict_proba, decision_function).
@@ -75,9 +71,15 @@ def _ale_for_numeric(est, grid, x, response_method='auto'):
             raise ValueError('The estimator has no decision_function method.')
 
     x_eval = x.copy()
-    quantiles = pd.cut(x_eval.iloc[:, 0], bins=grid[0], labels=False).fillna(0.0).astype(int)
+    x_feat = _safe_indexing(x, feature, axis=1)
+    print(x_feat)
+    quantiles = pd.cut(x_feat, bins=grid, labels=False).fillna(0.0).astype(int)
     x_eval_2 = x.copy()
-    x_eval_2.iloc[:, 0] = grid[0][quantiles + 1]
+    x_feat_incremented = _safe_indexing(x_eval_2, feature, axis=1)
+    x_feat_incremented = grid[quantiles + 1]
+    print(x_feat_incremented)
+    x_eval_2[feature] = x_feat_incremented
+    print(x_eval_2)
     y_hat = prediction_method(x_eval)
     y_hat_2 = prediction_method(x_eval_2)
     delta = y_hat_2 - y_hat
@@ -135,9 +137,9 @@ def accumulated_local_effects(est, x, feature, n_quantiles):
         _get_column_indices(x, feature), dtype=np.int32, order='C'
     ).ravel()
     quantiles = _quantiles_from_x(_safe_indexing(x, features_indices, axis=1), n_quantiles)
-    x_eval = _safe_indexing(x, feature, axis=1)
-    if x_eval.iloc[:, 0].dtype == "category" or x_eval.iloc[:, 0].dtype == "object":
-        ale = _ale_for_categorical(est, quantiles, x_eval)
+    x_feat = _safe_indexing(x, feature, axis=1)
+    if x_feat.dtype.name == "category" or x_feat.dtype == "object":
+        ale = _ale_for_categorical(est, quantiles, x_feat)
     else:
-        ale = _ale_for_numeric(est, quantiles, x_eval)
+        ale = _ale_for_numeric(est, quantiles, x, feature)
     return ale
