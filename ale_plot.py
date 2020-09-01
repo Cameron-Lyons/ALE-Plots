@@ -129,8 +129,8 @@ def plot_ale(estimator, X, features, *, feature_names=None,
     # multiclass and multioutput scenario are mutually exclusive. So there is
     # no risk of overwriting target_idx here.
     ale_result = ale_results[0]  # checking the first result is enough
-    n_tasks = (ale_result.average.shape[0] if kind == 'average'
-               else ale_result.individual.shape[0])
+    n_tasks = 1 # TODO add more tasks later
+
     if is_regressor(estimator) and n_tasks > 1:
         if target is None:
             raise ValueError(
@@ -143,8 +143,8 @@ def plot_ale(estimator, X, features, *, feature_names=None,
     # get global min and max average predictions of ale grouped by plot type
     ale_lim = {}
     for ale in ale_results:
-        values = ale["values"]
-        preds = (ale.average if kind == 'average' else ale.individual)
+        values = ale
+        preds = values
         min_ale = preds[target_idx].min()
         max_ale = preds[target_idx].max()
         n_fx = len(values)
@@ -294,14 +294,14 @@ class ALEDisplay:
 
             avg_preds = None
             preds = None
-            values = ale_result["values"]
+            values = ale_result
             if self.kind == 'individual':
-                preds = ale_result.individual
+                preds = ale_result
             elif self.kind == 'average':
                 avg_preds = ale_result.average
             else:  # kind='both'
-                avg_preds = ale_result.average
-                preds = ale_result.individual
+                avg_preds = ale_result
+                preds = ale_result
 
             if len(values) == 1:
                 if self.kind == 'individual' or self.kind == 'both':
