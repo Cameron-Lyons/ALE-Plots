@@ -128,7 +128,6 @@ def plot_ale(estimator, X, features, *, feature_names=None,
     # Also note: as multiclass-multioutput classifiers are not supported,
     # multiclass and multioutput scenario are mutually exclusive. So there is
     # no risk of overwriting target_idx here.
-    ale_result = ale_results[0]  # checking the first result is enough
     n_tasks = 1 # TODO add more tasks later
 
     if is_regressor(estimator) and n_tasks > 1:
@@ -143,7 +142,7 @@ def plot_ale(estimator, X, features, *, feature_names=None,
     # get global min and max average predictions of ale grouped by plot type
     ale_lim = {}
     for ale in ale_results:
-        values = ale
+        values = ale[0]
         preds = values
         min_ale = preds[target_idx].min()
         max_ale = preds[target_idx].max()
@@ -303,7 +302,7 @@ class ALEDisplay:
                 avg_preds = ale_result
                 preds = ale_result
 
-            if len(values) == 1:
+            if len(values[0]) == 1:
                 if self.kind == 'individual' or self.kind == 'both':
                     n_samples = self._get_sample_count(
                         len(preds[self.target_idx])
@@ -354,18 +353,19 @@ class ALEDisplay:
             if len(values) == 1:
                 if n_cols is None or i % n_cols == 0:
                     if not axi.get_ylabel():
-                        axi.set_ylabel('Partial dependence')
+                        axi.set_ylabel('ALE')
                 else:
                     axi.set_yticklabels([])
+                print(self.ale_lim)
                 axi.set_ylim(self.ale_lim[1])
             else:
                 # contour plot
                 trans = transforms.blended_transform_factory(axi.transAxes,
                                                              axi.transData)
                 xlim = axi.get_xlim()
-                hlines_ravel[i] = axi.hlines(self.deciles[fx[1]], 0, 0.05,
+                hlines_ravel[i] = axi.hlines(self.deciles[fx[0]], 0, 0.05,
                                              transform=trans, color='k')
                 # hline erases xlim
-                axi.set_ylabel(self.feature_names[fx[1]])
+                axi.set_ylabel(self.feature_names[fx[0]])
                 axi.set_xlim(xlim)
         return self
