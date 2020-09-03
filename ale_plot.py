@@ -1,16 +1,16 @@
 '''Plot accumulated local effect for regression and classification models'''
 
 import numbers
-from itertools import chain
-from itertools import count
+from itertools import chain, count
 from math import ceil
 import numpy as np
-from sklearn.utils import _safe_indexing
-from sklearn.utils import check_array
+from sklearn.utils import _safe_indexing, check_array
 from sklearn.base import is_regressor
 from joblib import Parallel, delayed
 from scipy.stats.mstats import mquantiles
 from scipy import sparse
+import matplotlib.pyplot as plt  # noqa
+from matplotlib.gridspec import GridSpecFromSubplotSpec  # noqa
 from matplotlib import transforms
 
 from _ale import accumulated_local_effects
@@ -26,9 +26,6 @@ def plot_ale(estimator, X, features, *, feature_names=None,
     The ``len(features)`` plots are arranged in a grid with ``n_cols``
     columns.  The deciles of the feature values will be shown with tick
     marks on the x-axes for one-way plots"""
-
-    import matplotlib.pyplot as plt  # noqa
-
 
     # set target_idx for multi-class estimators
     if hasattr(estimator, 'classes_') and np.size(estimator.classes_) > 2:
@@ -188,14 +185,12 @@ class ALEDisplay:
             if self.subsample < n_samples:
                 return self.subsample
             return n_samples
-        elif isinstance(self.subsample, numbers.Real):
+        if isinstance(self.subsample, numbers.Real):
             return ceil(n_samples * self.subsample)
         return n_samples
 
     def plot(self, ax=None, n_cols=3, line_kw=None, contour_kw=None):
-        import matplotlib.pyplot as plt  # noqa
-        from matplotlib.gridspec import GridSpecFromSubplotSpec  # noqa
-
+        '''plots ale to display'''
         if line_kw is None:
             line_kw = {}
         if contour_kw is None:
