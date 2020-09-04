@@ -5,6 +5,7 @@ import pandas as pd
 
 from sklearn.base import is_regressor
 from sklearn.utils import _safe_indexing, _get_column_indices
+from sklearn.utils.extmath import cartesian
 from scipy.stats.mstats import mquantiles
 
 def _quantiles_from_x(x, n_quantiles):
@@ -49,7 +50,7 @@ def _ale_for_numeric(est, grid, x, feature, response_method='auto'):
     """computes first order accumulated local efffects for a numeric feature"""
 
     # define the prediction_method (predict, predict_proba, decision_function).
-
+    
     if is_regressor(est):
         prediction_method = est.predict
     else:
@@ -81,14 +82,11 @@ def _ale_for_numeric(est, grid, x, feature, response_method='auto'):
     y_hat = prediction_method(x_eval)
     y_hat_2 = prediction_method(x_eval_2)
     delta = y_hat_2 - y_hat
-    effects  = pd.DataFrame({"a1": quantiles, "delta": delta}).groupby(
-        "a1"
-    ).mean()
-    quantile_counts = np.array(quantiles.value_counts(sort=False))
-    centers = (effects[:-1] + effects[1:]) / 2
-    ale = []
-    for i, value in enumerate(centers.to_numpy()):
-        ale.append(value * quantile_counts[i])
+    effects  = pd.DataFrame({"a1": quantiles, "delta": delta}).groupby("a1").mean()
+    avg_effects = effects.mean().to_numpy().flatten()
+    ale_edges = np.array([0, *np.cumsum(avg_effects)])
+    ale = (ale_edges[1:] + ale_edges[:-1]) / 2
+    ale -= np.sum(ale * effects.size / x.shape[0])
     return ale
 
 def _ale_for_categorical(est, grid, x, response_method='auto'):
