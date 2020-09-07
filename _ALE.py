@@ -85,8 +85,8 @@ def _ale_for_numeric(est, grid, x, feature, response_method='auto'):
     effects  = pd.DataFrame({"a1": quantiles, "delta": delta}).groupby("a1").mean()
     avg_effects = effects.mean().to_numpy().flatten()
     ale_edges = np.array([0, *np.cumsum(avg_effects)])
-    ale = (ale_edges[1:] + ale_edges[:-1]) / 2
-    ale -= np.sum(ale * effects.size / x.shape[0])
+    ale_centers = (ale_edges[1:] + ale_edges[:-1]) / 2
+    ale = ale_centers - np.sum(ale_centers * effects.size / x.shape[0])
     return ale
 
 def _ale_for_categorical(est, grid, x, response_method='auto'):
