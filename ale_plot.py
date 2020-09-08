@@ -135,7 +135,7 @@ def accumulated_local_effects(est, x, feature, n_quantiles):
     quantiles = _quantiles_from_x(_safe_indexing(x, features_indices, axis=1), n_quantiles)
     x_feat = _safe_indexing(x, feature, axis=1)
     if x_feat.to_numpy().dtype.name == "category" or x_feat.to_numpy().dtype == "object":
-        ale = _ale_for_categorical(est, quantiles, x_feat)
+        ale = _ale_for_categorical(est, quantiles, x, x_feat)
     else:
-        ale = _ale_for_numeric(est, quantiles, x, feature)
+        ale = _ale_for_numeric(est, quantiles, x, x_feat)
     return ale

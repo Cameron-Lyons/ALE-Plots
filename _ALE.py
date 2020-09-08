@@ -89,7 +89,7 @@ def _ale_for_numeric(est, grid, x, feature, response_method='auto'):
     ale = ale_centers - np.sum(ale_centers * effects.size / x.shape[0])
     return ale
 
-def _ale_for_categorical(est, grid, x, response_method='auto'):
+def _ale_for_categorical(est, grid, x, feature, response_method='auto'):
     """computes first order accumulated local efffects for a categorical feature"""
     if is_regressor(est):
         prediction_method = est.predict
@@ -112,13 +112,13 @@ def _ale_for_categorical(est, grid, x, response_method='auto'):
                 raise ValueError('The estimator has no predict_proba method.')
             raise ValueError('The estimator has no decision_function method.')
 
-    categories = x.value_counts().sort_index().values
-    n_categories = len(x.unique())
+    categories = feature.value_counts().sort_index().values
+    n_categories = len(feature.unique())
     effects = np.zeros((n_categories, n_categories))
     for i in range(n_categories):
-        x_eval = x[x_min.iloc[:, 0] == categories[i]]
-        x_min = x_eval.copy()
-        x_plus  = x_eval.copy()
+        x_eval = x[x.iloc[:, 0] == categories[i]]
+        x_min = x.copy()
+        x_plus  = x.copy()
         x_min.iloc[:, 0] = grid[i - 1]
         x_plus.iloc[:, 0] = grid[i + 1]
         effects[i] += (prediction_method(x_plus) - prediction_method(x_min)).sum() / x_eval.shape[0]
