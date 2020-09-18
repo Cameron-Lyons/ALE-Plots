@@ -139,9 +139,7 @@ def plot_ale(estimator, X, features, *, feature_names=None,
     # get global min and max average predictions of ale grouped by plot type
     ale_lim = {}
     for ale in ale_results:
-        values = ale
-        preds = values
-        print(preds)
+        preds = ale
         min_ale = preds[target_idx].min()
         max_ale = preds[target_idx].max()
         n_fx = len(values)
@@ -351,7 +349,6 @@ class ALEDisplay:
                         axi.set_ylabel('ALE')
                 else:
                     axi.set_yticklabels([])
-                print(self.ale_lim)
                 axi.set_ylim(self.ale_lim[1])
             else:
                 # contour plot
