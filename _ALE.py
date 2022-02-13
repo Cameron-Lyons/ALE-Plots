@@ -1,7 +1,6 @@
 """accumulated local effect for regression and classification models"""
 
 import numpy as np
-import pandas as pd
 
 from sklearn.base import is_regressor
 from sklearn.utils import _safe_indexing, _get_column_indices
@@ -74,7 +73,7 @@ def _ale_for_numeric(est, grid, x, feature, response_method='auto'):
 
     x_eval = x.copy()
     x_feat = _safe_indexing(x, feature, axis=1)
-    quantiles = pd.cut(x_feat.iloc[:,0], bins=grid, labels=False).fillna(0.0).astype(int)
+    quantiles = np.quantile(np.nan_to_num(x_feat.iloc[:,0]), q=grid).astype(int)
     x_eval_2 = x.copy()
     x_feat_incremented = _safe_indexing(x_eval_2, feature, axis=1)
     x_feat_incremented = grid[quantiles + 1]
