@@ -9,8 +9,8 @@ from sklearn.base import is_regressor
 from joblib import Parallel, delayed
 from scipy.stats.mstats import mquantiles
 from scipy import sparse
-import matplotlib.pyplot as plt  # noqa
-from matplotlib.gridspec import GridSpecFromSubplotSpec  # noqa
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpecFromSubplotSpec
 from matplotlib import transforms
 
 from _ale import accumulated_local_effects
@@ -21,7 +21,7 @@ def plot_ale(estimator, X, features, *, feature_names=None,
                             n_jobs=None, verbose=0,
                             line_kw=None, contour_kw=None, ax=None,
                             subsample=1000, kind="Average"):
-    """Accumulated Local Effect(ALE) plots.
+    """Accumulated Local Effect (ALE) plots.
 
     The ``len(features)`` plots are arranged in a grid with ``n_cols``
     columns.  The deciles of the feature values will be shown with tick
@@ -142,7 +142,7 @@ def plot_ale(estimator, X, features, *, feature_names=None,
         preds = ale
         min_ale = preds[target_idx].min()
         max_ale = preds[target_idx].max()
-        n_fx = len(values)
+        n_fx = len(ale)
         old_min_ale, old_max_ale = ale_lim.get(n_fx, (min_ale, max_ale))
         min_ale = min(min_ale, old_min_ale)
         max_ale = max(max_ale, old_max_ale)
