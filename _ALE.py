@@ -6,6 +6,7 @@ from sklearn.base import is_regressor
 from sklearn.utils import _safe_indexing, _get_column_indices
 from sklearn.utils.extmath import cartesian
 from scipy.stats.mstats import mquantiles
+from torch import quantile
 
 def _quantiles_from_x(x, n_quantiles):
     """Generate a grid of points based on the quantiles of x.
@@ -81,9 +82,10 @@ def _ale_for_numeric(est, grid, x, feature, response_method='auto'):
     y_hat = prediction_method(x_eval)
     y_hat_2 = prediction_method(x_eval_2)
     delta = y_hat_2 - y_hat
-    effects  = pd.DataFrame({"a1": quantiles, "delta": delta}).groupby("a1").mean()
-    avg_effects = effects.mean().to_numpy().flatten()
-    ale_edges = np.array([0, *np.cumsum(avg_effects)])
+    quantile_delta = np.array([quantiles, delta]).T
+    effects = np.split(quantile_delta[:,1], np.unique(quantile_delta[:, 0], return_index=True)[1][1:])
+    avg_effects = effects.mean().flatten()
+    ale_edges = np.array([0, * np.cumsum(avg_effects)])
     ale_centers = (ale_edges[1:] + ale_edges[:-1]) / 2
     ale = ale_centers - np.sum(ale_centers * effects.size / x.shape[0])
     return ale
