@@ -6,7 +6,6 @@ from sklearn.base import is_regressor
 from sklearn.utils import _safe_indexing, _get_column_indices
 from sklearn.utils.extmath import cartesian
 from scipy.stats.mstats import mquantiles
-from torch import quantile
 
 def _quantiles_from_x(x, n_quantiles):
     """Generate a grid of points based on the quantiles of x.
